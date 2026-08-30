@@ -2,23 +2,31 @@
 Main FastAPI application
 """
 
-from fastapi import FastAPI, HTTPException, status, Request
-from fastapi.responses import JSONResponse
-
-from api.data import WarehouseTable
-from api.repositories import WarehouseRepository, DefaultsRepository, OverridesRepository, \
-    EndpointsRepository
-from api.web import Configuration, Warehouse, CatalogException, CatalogErrorTypes
 import os
+from contextlib import asynccontextmanager
+
+from api.data import (
+    ConfigurationDefaultsTable,
+    ConfigurationOverridesTable,
+    EndpointsTable,
+    WarehouseTable,
+)
+from api.factories import WarehouseFactory
+from api.repositories import (
+    DefaultsRepository,
+    EndpointsRepository,
+    OverridesRepository,
+    WarehouseRepository,
+)
+from api.web import CatalogErrorTypes, CatalogException, Configuration, Warehouse
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from contextlib import asynccontextmanager
-from api.factories import WarehouseFactory
-
-
 
 url = os.getenv('DATABASE_URL', '')
 engine = create_engine(url)
+
 
 def create_db_and_tables() -> None:
     """
@@ -26,11 +34,13 @@ def create_db_and_tables() -> None:
     :return: None
     """
     WarehouseTable.metadata.create_all(engine)
-
+    ConfigurationOverridesTable.metadata.create_all(engine)
+    ConfigurationDefaultsTable.metadata.create_all(engine)
+    EndpointsTable.metadata.create_all(engine)
 
 
 @asynccontextmanager
-async def lifespan(app:FastAPI):
+async def lifespan(app: FastAPI):
     """
     Lifespan startup for setting up the database
     :param app: FastAPI Application
@@ -39,25 +49,23 @@ async def lifespan(app:FastAPI):
     create_db_and_tables()
     yield
 
+
 app = FastAPI(lifespan=lifespan)
 
 
 @app.exception_handler(CatalogException)
-async def catalog_exception_handler(request:Request, exc: CatalogException):
+async def catalog_exception_handler(request: Request, exc: CatalogException):
     """
     Returns the Exception in the format expected by the Iceberg Catalog REST API.
     :param request: Request
     :param exc: Exception
     :return: JSON Response
     """
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=exc.to_content()
-    )
+    return JSONResponse(status_code=exc.status_code, content=exc.to_content())
 
 
 @app.get('/warehouses')
-async def get_warehouses(page:int=1, page_size:int=100) -> list[Warehouse]:
+async def get_warehouses(page: int = 1, page_size: int = 100) -> list[Warehouse]:
     """
     Returns a Listing of available warehouses in the Catalog
     :param page: Page Number
@@ -74,6 +82,7 @@ async def get_warehouses(page:int=1, page_size:int=100) -> list[Warehouse]:
 
     return [WarehouseFactory.to_warehouse(x) for x in result]
 
+
 @app.get('/warehouses/{warehouse_id}')
 async def get_warehouse(warehouse_id: int) -> Warehouse | None:
     """
@@ -87,7 +96,10 @@ async def get_warehouse(warehouse_id: int) -> Warehouse | None:
         item = repo.get(warehouse_id)
 
     if item is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Warehouse with id: {warehouse_id} does not exist.')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Warehouse with id: {warehouse_id} does not exist.',
+        )
 
     return WarehouseFactory.to_warehouse(item)
 
@@ -111,6 +123,7 @@ async def create_warehouse(warehouse: Warehouse) -> Warehouse:
         session.refresh(output)
     return WarehouseFactory.to_warehouse(output)
 
+
 @app.get('/v1/config')
 async def get_config(warehouse: str) -> Configuration:
     """
@@ -126,7 +139,9 @@ async def get_config(warehouse: str) -> Configuration:
         warehouse_repo = WarehouseRepository(session)
         warehouse_item = warehouse_repo.get_warehouse_by_path(warehouse)
         if warehouse_item is None:
-            raise CatalogException('The given warehouse does not exist.', CatalogErrorTypes.NO_SUCH_WAREHOUSE, 404)
+            raise CatalogException(
+                'The given warehouse does not exist.', CatalogErrorTypes.NO_SUCH_WAREHOUSE, 404
+            )
 
         def_repo = DefaultsRepository(session)
         defaults = def_repo.get_defaults(warehouse_item.warehouse_id)
@@ -137,9 +152,10 @@ async def get_config(warehouse: str) -> Configuration:
         ep_repo = EndpointsRepository(session)
         endpoints = ep_repo.get_all()
 
-        defs = {x.default_key:x.default_value for x in defaults}
+        defs = {x.default_key: x.default_value for x in defaults}
         ovrs = {x.configuration_key: x.configuration_value for x in overrides}
         ends = [x.endpoint for x in endpoints]
 
-        return Configuration(overrides=ovrs, defaults=defs, idempotency_key_lifetime=idempotent_key, endpoints=ends)
-
+        return Configuration(
+            overrides=ovrs, defaults=defs, idempotency_key_lifetime=idempotent_key, endpoints=ends
+        )

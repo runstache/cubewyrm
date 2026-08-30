@@ -7,7 +7,6 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
-
     def to_dict(self):
         """
         Converts the Base Model to a dictionary.

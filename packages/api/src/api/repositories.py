@@ -97,7 +97,7 @@ class WarehouseRepository(BaseRepository[WarehouseTable]):
         """
         super().__init__(WarehouseTable, session)
 
-    def get_warehouse_by_path(self, warehouse_path:str) -> WarehouseTable | None:
+    def get_warehouse_by_path(self, warehouse_path: str) -> WarehouseTable | None:
         """
         Retrieved the Warehouse by its path
         :param warehouse_path: Warehouse Path
@@ -121,13 +121,15 @@ class OverridesRepository(BaseRepository[ConfigurationOverridesTable]):
         """
         super().__init__(ConfigurationOverridesTable, session)
 
-    def get_overrides(self, warehouse_id:int) -> Sequence[ConfigurationOverridesTable]:
+    def get_overrides(self, warehouse_id: int) -> Sequence[ConfigurationOverridesTable]:
         """
         Retrieves the ConfigurationOverrides for a given warehouse.
         :param warehouse_id: Warehouse ID
         :return: List of ConfigurationOverrides
         """
-        stmt = select(ConfigurationOverridesTable).where(ConfigurationOverridesTable.warehouse_id == warehouse_id)
+        stmt = select(ConfigurationOverridesTable).where(
+            ConfigurationOverridesTable.warehouse_id == warehouse_id
+        )
         result = self.db.scalars(stmt).all()
         return result
 
@@ -144,16 +146,18 @@ class DefaultsRepository(BaseRepository[ConfigurationDefaultsTable]):
         """
         super().__init__(ConfigurationDefaultsTable, session)
 
-
-    def get_defaults(self, warehouse_id:int) -> Sequence[ConfigurationDefaultsTable]:
+    def get_defaults(self, warehouse_id: int) -> Sequence[ConfigurationDefaultsTable]:
         """
         Retrieves the Configuration Defaults for a given warehouse.
         :param warehouse_id: Warehouse ID
         :return: Sequence of ConfigurationDefaults
         """
-        stmt = select(ConfigurationDefaultsTable).where(ConfigurationDefaultsTable.warehouse_id == warehouse_id)
+        stmt = select(ConfigurationDefaultsTable).where(
+            ConfigurationDefaultsTable.warehouse_id == warehouse_id
+        )
         result = self.db.scalars(stmt).all()
         return result
+
 
 class EndpointsRepository(BaseRepository[EndpointsTable]):
     """

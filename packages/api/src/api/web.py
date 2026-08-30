@@ -2,13 +2,16 @@
 WebAPI Contracts
 """
 
-from pydantic import BaseModel, Field
 from enum import StrEnum
+
+from pydantic import BaseModel, Field
+
 
 class CatalogErrorTypes(StrEnum):
     """
     Catalog Error Types
     """
+
     NO_SUCH_WAREHOUSE = 'NoSuchWarehouseException'
     BAD_REQUEST = 'BadRequestException'
     NOT_AUTHORIZED = 'NotAuthorizedException'
@@ -17,17 +20,16 @@ class CatalogErrorTypes(StrEnum):
     SERVER_ERROR = 'InternalServerError'
 
 
-
 class CatalogException(Exception):
     """
     Specific Catalog Exception Handler Class
     """
 
     message: str
-    error_type:str
-    status_code:int
+    error_type: str
+    status_code: int
 
-    def __init__(self, message:str, error_type:str, status_code:int):
+    def __init__(self, message: str, error_type: str, status_code: int):
         """
         Constructor.
         :param message: Error Message
@@ -45,11 +47,7 @@ class CatalogException(Exception):
         """
 
         return {
-            'error': {
-                'message': self.message,
-                'type': self.error_type,
-                'code': self.status_code
-            }
+            'error': {'message': self.message, 'type': self.error_type, 'code': self.status_code}
         }
 
 
