@@ -1,0 +1,33 @@
+"""
+Factories Module for creating object
+"""
+
+from api.web import Warehouse
+from api.data import WarehouseTable
+
+class WarehouseFactory:
+    """
+    Factory for translating Warehouse DTO Objects to the Web Interface
+    """
+    @staticmethod
+    def to_warehouse(row:WarehouseTable) -> Warehouse:
+        """
+        Converts a Warehouse Table Row to the Warehouse API Response
+        :return: Warehouse API response
+        """
+        return Warehouse(
+            warehouse_id=row.warehouse_id,
+            warehouse_code=row.warehouse_code,
+            warehouse_name=row.warehouse_name
+        )
+
+
+
+    @staticmethod
+    def to_warehouse_table(warehouse:Warehouse) -> WarehouseTable:
+        """
+        Concerts a Warehouse API Object to the Warehouse Table Row
+        :param warehouse: Warehouse API Object
+        :return: Warehouse Table Row
+        """
+        return WarehouseTable(**warehouse.model_dump())
