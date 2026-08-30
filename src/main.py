@@ -2,7 +2,7 @@
 Main FastAPI application
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 
 from api.data import WarehouseTable
 from api.repositories import WarehouseRepository
@@ -12,6 +12,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
 from api.factories import WarehouseFactory
+
 
 
 url = os.getenv('DATABASE_URL', '')
@@ -64,6 +65,42 @@ async def get_warehouses(page:int=1, page_size:int=100) -> list[Warehouse]:
 
     return [WarehouseFactory.to_warehouse(x) for x in result]
 
+@app.get('/warehouses/{warehouse_id}')
+async def get_warehouse(warehouse_id: int) -> Warehouse | None:
+    """
+    Returns the Warehouse by Primary Key
+    :param warehouse_id: Warehouse ID
+    :return: Warehouse
+    """
+
+    with Session(engine) as session:
+        repo = WarehouseRepository(session)
+        item = repo.get(warehouse_id)
+
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Warehouse with id: {warehouse_id} does not exist.')
+
+    return WarehouseFactory.to_warehouse(item)
+
+
+@app.post('/warehouses')
+async def create_warehouse(warehouse: Warehouse) -> Warehouse:
+    """
+    Creates a new Warehouse in the Catalog
+    :param warehouse: Warehouse.
+    :return: Warehouse
+    """
+    with Session(engine) as session:
+        repo = WarehouseRepository(session)
+        existing = repo.get_warehouse_by_name(warehouse.warehouse_name)
+        if existing is not None:
+            output = repo.update(existing, warehouse.model_dump(exclude={'warehouse_id'}))
+        else:
+            output = repo.create(warehouse.model_dump())
+
+        session.commit()
+        session.refresh(output)
+    return WarehouseFactory.to_warehouse(output)
 
 @app.get('v1/config')
 async def get_config(warehouse: str | None = None) -> Configuration:

@@ -97,6 +97,17 @@ class WarehouseRepository(BaseRepository[WarehouseTable]):
         """
         super().__init__(WarehouseTable, session)
 
+    def get_warehouse_by_name(self, name:str) -> WarehouseTable | None:
+        """
+        Checks if a warehouse exists already
+        :param name: Warehouse Name
+        :return: Boolean
+        """
+
+        stmt = select(self.model).where(WarehouseTable.warehouse_name == name)
+        result = self.db.scalars(stmt).all()
+        return result[0] if result else None
+
 
 class OverridesRepository(BaseRepository[ConfigurationOverridesTable]):
     """
