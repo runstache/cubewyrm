@@ -1,6 +1,9 @@
 name: UNIT TESTS
 on:
-  push:
+  pull_request:
+    types:
+      - opened
+      - synchronize
   workflow_dispatch:
 
 jobs:

@@ -4,6 +4,8 @@ version = "0.1.0"
 requires-python = "~=3.14.0"
 dependencies = [
     "fastapi[standard-no-fastapi-cloud-cli]>=0.139.2",
+    "psycopg[binary]>=3.3.4",
+    "sqlalchemy>=2.0.51",
 ]
 
 [tool.uv.workspace]
@@ -12,11 +14,12 @@ members = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath="src"
+pythonpath=[".", "src"]
 
 [tool.mypy]
 mypy_path = ["packages", "src"]
 ignore_missing_imports = true
+exclude = ["tests"]
 
 
 [tool.coverage.report]
@@ -113,5 +116,10 @@ dev = [
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "responses>=0.26.2",
+    "api",
+    "testcontainers[postgres]>=4.14.2",
+    "httpx2>=2.12.0",
 ]
 
+[tool.uv.sources]
+api = { workspace = true }
