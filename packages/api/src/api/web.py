@@ -11,8 +11,8 @@ class Warehouse(BaseModel):
     """
 
     warehouse_id: int | None = Field(description='Warehouse ID value', default=None)
-    warehouse_code: str = Field(description='Warehouse Code')
-    warehouse_name: str = Field(description='Warehouse Name')
+    warehouse_path: str = Field(description='Location Path of the Warehouse')
+    warehouse_description: str = Field(description='Warehouse Description')
 
 
 class Configuration(BaseModel):

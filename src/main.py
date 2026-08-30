@@ -92,7 +92,7 @@ async def create_warehouse(warehouse: Warehouse) -> Warehouse:
     """
     with Session(engine) as session:
         repo = WarehouseRepository(session)
-        existing = repo.get_warehouse_by_name(warehouse.warehouse_name)
+        existing = repo.get_warehouse_by_path(warehouse.warehouse_path)
         if existing is not None:
             output = repo.update(existing, warehouse.model_dump(exclude={'warehouse_id'}))
         else:

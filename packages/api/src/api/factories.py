@@ -17,8 +17,8 @@ class WarehouseFactory:
         """
         return Warehouse(
             warehouse_id=row.warehouse_id,
-            warehouse_code=row.warehouse_code,
-            warehouse_name=row.warehouse_name
+            warehouse_path=row.warehouse_path,
+            warehouse_description=row.warehouse_description
         )
 
 

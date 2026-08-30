@@ -20,14 +20,14 @@ class WarehouseTable(Base):
     warehouse_id: Mapped[int] = mapped_column(
         'warehouse_id', BigInteger, primary_key=True, autoincrement=True, index=True
     )
-    warehouse_code: Mapped[str] = mapped_column('warehouse_code', String(50))
-    warehouse_name: Mapped[str] = mapped_column('warehouse_name', String(150))
+    warehouse_path: Mapped[str] = mapped_column('warehouse_path', String(255))
+    warehouse_description: Mapped[str] = mapped_column('warehouse_description', String(255))
 
     def __repr__(self):
         return (
             f'WarehouseTable(warehouse_id={self.warehouse_id}, '
-            f'warehouse_code={self.warehouse_code}, '
-            f'warehouse_name={self.warehouse_name})'
+            f'warehouse_path={self.warehouse_path}, '
+            f'warehouse_description={self.warehouse_description})'
         )
 
 
