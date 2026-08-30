@@ -2,11 +2,13 @@
 Main FastAPI application
 """
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Request
+from fastapi.responses import JSONResponse
 
 from api.data import WarehouseTable
-from api.repositories import WarehouseRepository
-from api.web import Configuration, Warehouse
+from api.repositories import WarehouseRepository, DefaultsRepository, OverridesRepository, \
+    EndpointsRepository
+from api.web import Configuration, Warehouse, CatalogException, CatalogErrorTypes
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -26,13 +28,6 @@ def create_db_and_tables() -> None:
     WarehouseTable.metadata.create_all(engine)
 
 
-def get_session():
-    """
-    Returns a SQLAlchemy Session.
-    :return: Session
-    """
-    return Session(engine)
-
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -45,6 +40,20 @@ async def lifespan(app:FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.exception_handler(CatalogException)
+async def catalog_exception_handler(request:Request, exc: CatalogException):
+    """
+    Returns the Exception in the format expected by the Iceberg Catalog REST API.
+    :param request: Request
+    :param exc: Exception
+    :return: JSON Response
+    """
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=exc.to_content()
+    )
 
 
 @app.get('/warehouses')
@@ -102,12 +111,35 @@ async def create_warehouse(warehouse: Warehouse) -> Warehouse:
         session.refresh(output)
     return WarehouseFactory.to_warehouse(output)
 
-@app.get('v1/config')
-async def get_config(warehouse: str | None = None) -> Configuration:
+@app.get('/v1/config')
+async def get_config(warehouse: str) -> Configuration:
     """
     All Rest Clients should call this route first. This provides the catalog configuration
     properties from the server
-    :param warehouse: Warehouse name to retrieve the Catalog Configuration for.
+    :param warehouse: Warehouse path to retrieve the Catalog Configuration for.
     :return: Configuration Response
     """
-    raise NotImplementedError()
+
+    idempotent_key = os.getenv('IDEMPOTENT_LIFETIME')
+
+    with Session(engine) as session:
+        warehouse_repo = WarehouseRepository(session)
+        warehouse_item = warehouse_repo.get_warehouse_by_path(warehouse)
+        if warehouse_item is None:
+            raise CatalogException('The given warehouse does not exist.', CatalogErrorTypes.NO_SUCH_WAREHOUSE, 404)
+
+        def_repo = DefaultsRepository(session)
+        defaults = def_repo.get_defaults(warehouse_item.warehouse_id)
+
+        ov_repo = OverridesRepository(session)
+        overrides = ov_repo.get_overrides(warehouse_item.warehouse_id)
+
+        ep_repo = EndpointsRepository(session)
+        endpoints = ep_repo.get_all()
+
+        defs = {x.default_key:x.default_value for x in defaults}
+        ovrs = {x.configuration_key: x.configuration_value for x in overrides}
+        ends = [x.endpoint for x in endpoints]
+
+        return Configuration(overrides=ovrs, defaults=defs, idempotency_key_lifetime=idempotent_key, endpoints=ends)
+

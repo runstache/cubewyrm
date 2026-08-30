@@ -7,7 +7,13 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
-    pass
+
+    def to_dict(self):
+        """
+        Converts the Base Model to a dictionary.
+        :return: Dictionary
+        """
+        return {x.name: getattr(self, x.name) for x in self.__table__.columns}
 
 
 class WarehouseTable(Base):
